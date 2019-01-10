@@ -22,10 +22,10 @@ def parser(serialized_example):
                     'image': tf.FixedLenFeature([], tf.string),
                     'label': tf.FixedLenFeature([], tf.string),
             })
-    image = tf.decode_raw(features['image'], tf.float32)
-    label = tf.decode_raw(features['label'], tf.float32)
+    image = tf.decode_raw(features['image'], np.float32)
+    label = tf.decode_raw(features['label'], np.float32)
     image.set_shape([3*128*128])
-    image = image * (2.0 / 255) - 1.0
+    image = tf.cast(image, tf.float32) * (2.0 / 255) - 1.0
     image = tf.reshape(image, [128, 128, 3])
     label = tf.reshape(label, [6])
     return image, label
