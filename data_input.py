@@ -24,7 +24,6 @@ def parser(serialized_example):
     image = tf.decode_raw(features['image'], tf.float32)
     label = tf.decode_raw(features['label'], tf.float32)
     image.set_shape([3*128*128])
-    image = image * (2.0 / 255) - 1.0
     image = tf.reshape(image, [128, 128, 3])
     label = tf.reshape(label, [6])
     return image, label
@@ -45,7 +44,9 @@ class InputFunction(object):
         dataset = dataset.prefetch(4*batch_size).cache().repeat()
         dataset = dataset.batch(batch_size, drop_remainder=True)
         dataset = dataset.prefetch(2)
-        images, labels = dataset.make_one_shot_iterator().get_next()
+        data_iter = dataset.make_one_shot_iterator()
+        print(len(data_iter))
+        images, labels = data_iter.get_next()
 
         # Reshape to give inputs statically known shapes.
         images = tf.reshape(images, [batch_size, 128, 128, 3])
