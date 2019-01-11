@@ -15,24 +15,22 @@ flags.DEFINE_string('test_data_path', '', 'Path to test data.')
 
 
 def parser(serialized_example):
-    """Parses a single tf.Example into image and label tensors."""
     features = tf.parse_single_example(
             serialized_example,
             features={
                     'image': tf.FixedLenFeature([], tf.string),
                     'label': tf.FixedLenFeature([], tf.string),
             })
-    image = tf.decode_raw(features['image'], np.float32)
-    label = tf.decode_raw(features['label'], np.float32)
+    image = tf.decode_raw(features['image'], tf.float32)
+    label = tf.decode_raw(features['label'], tf.float32)
     image.set_shape([3*128*128])
-    image = tf.cast(image, tf.float32) * (2.0 / 255) - 1.0
+    image = image * (2.0 / 255) - 1.0
     image = tf.reshape(image, [128, 128, 3])
     label = tf.reshape(label, [6])
     return image, label
 
 
 class InputFunction(object):
-    """Wrapper class that is passed as callable to Estimator."""
 
     def __init__(self, is_training, noise_dim):
         self.is_training = is_training
@@ -51,6 +49,7 @@ class InputFunction(object):
 
         # Reshape to give inputs statically known shapes.
         images = tf.reshape(images, [batch_size, 128, 128, 3])
+        labels = tf.reshape(labels, [batch_size, 6])
 
         random_noise = tf.random_normal([batch_size, self.noise_dim])
 
@@ -62,6 +61,5 @@ class InputFunction(object):
 
 
 def convert_array_to_image(array):
-    """Converts a numpy array to a PIL Image and undoes any rescaling."""
     img = Image.fromarray(np.uint8((array + 1.0) / 2.0 * 255), mode='RGB')
     return img

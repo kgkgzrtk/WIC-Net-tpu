@@ -91,6 +91,7 @@ def discriminator(x, is_training=True, scope='Discriminator'):
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+        print(x.shape)
         ch = 1024
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
@@ -99,4 +100,5 @@ def generator(x, is_training=True, scope='Generator'):
             ch = ch//2
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
         x = _conv2d(x, 3, 3, 1, name='final_c')
-        return tf.nn.tanh(x)
+        x = tf.tanh(x)
+        return x

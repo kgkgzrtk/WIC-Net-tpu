@@ -31,7 +31,7 @@ flags.DEFINE_string(
 flags.DEFINE_string('model_dir', '', 'Output model directory')
 flags.DEFINE_integer('noise_dim', 1024, 'Number of dimensions for the noise vector')
 flags.DEFINE_integer('batch_size', 1024, 'Batch size for both generator and discriminator')
-flags.DEFINE_integer('num_shards', None, 'Number of TPU chips')
+flags.DEFINE_integer('num_shards', 8, 'Number of TPU chips')
 flags.DEFINE_integer('train_steps', 10000, 'Number of training steps')
 flags.DEFINE_integer('train_steps_per_eval', 1000, 'Steps per eval and image generation')
 flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
@@ -127,18 +127,6 @@ def generate_input_fn(is_training):
 
 
 def noise_input_fn(params):
-    """Input function for generating samples for PREDICT mode.
-
-    Generates a single Tensor of fixed random noise. Use tf.data.Dataset to
-    signal to the estimator when to terminate the generator returned by
-    predict().
-
-    Args:
-        params: param `dict` passed by TPUEstimator.
-
-    Returns:
-        1-element `dict` containing the randomly generated noise.
-    """
     np.random.seed(0)
     noise_dataset = tf.data.Dataset.from_tensors(tf.constant(
             np.random.randn(params['batch_size'], FLAGS.noise_dim), dtype=tf.float32))
@@ -158,7 +146,8 @@ def main(argv):
             model_dir=FLAGS.model_dir,
             tpu_config=tf.contrib.tpu.TPUConfig(
                     num_shards=FLAGS.num_shards,
-                    iterations_per_loop=FLAGS.iterations_per_loop))
+                    iterations_per_loop=FLAGS.iterations_per_loop,
+                    per_host_input_for_training=False))
 
     global dataset, model
     dataset = data_input
