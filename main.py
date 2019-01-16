@@ -56,9 +56,6 @@ def model_fn(features, labels, mode, params):
     real_images = features['real_images']
     random_noise = features['random_noise']
 
-    #summary
-    tf.summary.image('input_image', real_images[:_NUM_VIZ_IMAGES], _NUM_VIZ_IMAGES)
-
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
     generated_images = model.generator(random_noise, is_training=is_training)
 
@@ -120,6 +117,13 @@ def generate_input_fn(is_training):
     return dataset.InputFunction(is_training, FLAGS.noise_dim)
 
 
+def summary_writer(is_training):
+    features, labels = dataset.InputFunction(is_training, FLAGS.noise_dim)
+    images = features['real_images']
+    images = dataset.convert_array_to_image(images)
+    tf.summary.image('input_image', images[:_NUM_VIZ_IMAGES], _NUM_VIZ_IMAGES)
+
+
 def noise_input_fn(params):
     np.random.seed(0)
     noise_dataset = tf.data.Dataset.from_tensors(tf.constant(
@@ -147,6 +151,7 @@ def main(argv):
     dataset = data_input
     model = wic_model
 
+
     # TPU-based estimator used for TRAIN and EVAL
     est = tf.contrib.tpu.TPUEstimator(
             model_fn=model_fn,
@@ -163,6 +168,8 @@ def main(argv):
             predict_batch_size=_NUM_VIZ_IMAGES)
 
     tf.gfile.MakeDirs(os.path.join(FLAGS.model_dir, 'generated_images'))
+
+    summary_writer(True)
 
     current_step = estimator._load_global_step_from_checkpoint_dir(FLAGS.model_dir) 
     tf.logging.info('Starting training for %d steps, current step: %d' % (FLAGS.train_steps, current_step))
