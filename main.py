@@ -123,7 +123,7 @@ def summary_input_fn(is_training):
     images = features['real_images']
     images = tf.cast((images+1.)*127.5, tf.uint8)
     tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
-    tf.logging_info("done summary process")
+    tf.logging.info("done summary process")
     return input_fn
 
 
