@@ -21,8 +21,10 @@ def parser(serialized_example):
                     'image': tf.FixedLenFeature([], tf.string),
                     'label': tf.FixedLenFeature([], tf.string),
             })
-    image = tf.decode_raw(features['image'], tf.float32)
-    label = tf.decode_raw(features['label'], tf.float32)
+    image = tf.decode_raw(features['image'], tf.float64)
+    label = tf.decode_raw(features['label'], tf.float64)
+    image = tf.cast(image, tf.float32)
+    label = tf.cast(label, tf.float32)
     image.set_shape([3*128*128])
     image = tf.reshape(image, [128, 128, 3])
     label = tf.reshape(label, [6])
@@ -40,15 +42,12 @@ class InputFunction(object):
     def __call__(self, params):
         batch_size = params['batch_size']
         dataset = tf.data.TFRecordDataset([self.data_file])
-        dataset = dataset.map(parser, num_parallel_calls=batch_size)
+        dataset = dataset.map(parser, num_parallel_calls=8)
         dataset = dataset.prefetch(4*batch_size).cache().repeat()
-        dataset = dataset.batch(batch_size, drop_remainder=True)
+        dataset = dataset.batch(batch_size, drop_remainder=False)
         dataset = dataset.prefetch(2)
-        data_iter = dataset.make_one_shot_iterator()
-        print(len(data_iter))
-        images, labels = data_iter.get_next()
+        images, labels = dataset.make_one_shot_iterator().get_next()
 
-        # Reshape to give inputs statically known shapes.
         images = tf.reshape(images, [batch_size, 128, 128, 3])
         labels = tf.reshape(labels, [batch_size, 6])
 
