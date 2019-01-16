@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
+NUM_EVAL_IMAGES = 2000
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_data_path', '',
@@ -43,7 +44,7 @@ class InputFunction(object):
         batch_size = params['batch_size']
         dataset = tf.data.TFRecordDataset([self.data_file])
         dataset = dataset.map(parser, num_parallel_calls=8)
-        dataset = dataset.prefetch(4*batch_size).cache().repeat()
+        dataset = dataset.prefetch(8*batch_size).cache().repeat()
         dataset = dataset.batch(batch_size, drop_remainder=False)
         dataset = dataset.prefetch(2)
         images, labels = dataset.make_one_shot_iterator().get_next()

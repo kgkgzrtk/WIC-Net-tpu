@@ -33,7 +33,7 @@ flags.DEFINE_integer('noise_dim', 1024, 'Number of dimensions for the noise vect
 flags.DEFINE_integer('batch_size', 1024, 'Batch size for both generator and discriminator')
 flags.DEFINE_integer('num_shards', 8, 'Number of TPU chips')
 flags.DEFINE_integer('train_steps', 10000, 'Number of training steps')
-flags.DEFINE_integer('train_steps_per_eval', 1000, 'Steps per eval and image generation')
+flags.DEFINE_integer('train_steps_per_eval', 100, 'Steps per eval and image generation')
 flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
 flags.DEFINE_float('learning_rate', 0.0002, 'LR for both D and G')
 flags.DEFINE_boolean('eval_loss', False, 'Evaluate discriminator and generator loss during eval')
@@ -41,7 +41,6 @@ flags.DEFINE_boolean('use_tpu', True, 'Use TPU for training')
 
 _NUM_VIZ_IMAGES = 100 # For generating a 10x10 grid of generator samples
 
-# Global variables for data and model
 dataset = None
 model = None
 
@@ -65,23 +64,16 @@ def model_fn(features, labels, mode, params):
     d_on_g_logits = tf.squeeze(model.discriminator(generated_images))
 
     # Calculate discriminator loss
-    d_loss_on_data = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.ones_like(d_on_data_logits),
-            logits=d_on_data_logits)
-    d_loss_on_gen = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.zeros_like(d_on_g_logits),
-            logits=d_on_g_logits)
+    d_loss_on_data = tf.reduce_mean(tf.nn.relu(1. - d_on_data_logits))
+    d_loss_on_gen = tf.reduce_mean(tf.nn.relu(1. + d_on_g_logits))
+
     d_loss = d_loss_on_data + d_loss_on_gen
 
     # Calculate generator loss
-    g_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.ones_like(d_on_g_logits),
-            logits=d_on_g_logits)
+    g_loss = - tf.reduce_mean(d_on_g_logits)
 
     #Train
     if mode == tf.estimator.ModeKeys.TRAIN:
-        d_loss = tf.reduce_mean(d_loss)
-        g_loss = tf.reduce_mean(g_loss)
         d_optimizer = tf.train.AdamOptimizer(
                 learning_rate=FLAGS.learning_rate, beta1=0.5)
         g_optimizer = tf.train.AdamOptimizer(
@@ -99,7 +91,7 @@ def model_fn(features, labels, mode, params):
                     g_loss,
                     var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Generator'))
             increment_step = tf.assign_add(tf.train.get_or_create_global_step(), 1)
-            joint_op = tf.group([d_step, g_step, increment_step])
+            joint_op = tf.group([d_step]*5 + [g_step, increment_step])
 
             return tf.contrib.tpu.TPUEstimatorSpec(
                     mode=mode,
@@ -115,7 +107,7 @@ def model_fn(features, labels, mode, params):
 
         return tf.contrib.tpu.TPUEstimatorSpec(
                 mode=mode,
-                loss=tf.reduce_mean(g_loss),
+                loss=g_loss,
                 eval_metrics=(_eval_metric_fn, [d_loss, g_loss]))
 
     # Should never reach here
