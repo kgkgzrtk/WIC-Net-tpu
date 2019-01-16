@@ -117,11 +117,13 @@ def generate_input_fn(is_training):
     return dataset.InputFunction(is_training, FLAGS.noise_dim)
 
 
-def summary_writer(is_training):
-    features, labels = dataset.InputFunction(is_training, FLAGS.noise_dim)
+def summary_input_fn(is_training):
+    input_fn = dataset.InputFunction(is_training, FLAGS.noise_dim)
+    features, labels = input_fn({'batch_size': _NUM_VIZ_IMAGES})
     images = features['real_images']
     images = dataset.convert_array_to_image(images)
-    tf.summary.image('input_image', images[:_NUM_VIZ_IMAGES], _NUM_VIZ_IMAGES)
+    tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
+    return input_fn
 
 
 def noise_input_fn(params):
@@ -169,8 +171,6 @@ def main(argv):
 
     tf.gfile.MakeDirs(os.path.join(FLAGS.model_dir, 'generated_images'))
 
-    summary_writer(True)
-
     current_step = estimator._load_global_step_from_checkpoint_dir(FLAGS.model_dir) 
     tf.logging.info('Starting training for %d steps, current step: %d' % (FLAGS.train_steps, current_step))
     while current_step < FLAGS.train_steps:
@@ -180,9 +180,10 @@ def main(argv):
         tf.logging.info('Finished training step %d' % current_step)
 
         if FLAGS.eval_loss:
+            # Write summary
+            _  = est.evaluate(input_fn=summary_input_fn(False), steps=1)
             # Evaluate loss on test set
-            metrics = est.evaluate(input_fn=generate_input_fn(False),
-                                    steps=1)
+            metrics = est.evaluate(input_fn=generate_input_fn(False), steps=1)
             tf.logging.info('Finished evaluating')
             tf.logging.info(metrics)
 
