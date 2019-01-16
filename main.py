@@ -182,11 +182,7 @@ def main(argv):
 
         if FLAGS.eval_loss:
             # Write summary
-            _  = est.evaluate(input_fn=summary_input_fn(False), steps=1)
-            # Evaluate loss on test set
-            metrics = est.evaluate(input_fn=generate_input_fn(False), steps=1)
-            tf.logging.info('Finished evaluating')
-            tf.logging.info(metrics)
+            summary_input_fn(False)
 
         # Render some generated images
         generated_iter = cpu_est.predict(input_fn=noise_input_fn)
