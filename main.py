@@ -178,9 +178,6 @@ def main(argv):
         current_step = next_checkpoint
         tf.logging.info('Finished training step %d' % current_step)
 
-        if FLAGS.eval_loss:
-            # Evaluation process
-
         # Render some generated images
         generated_iter = cpu_est.predict(input_fn=noise_input_fn)
         images = [p['generated_images'][:, :, :] for p in generated_iter]
