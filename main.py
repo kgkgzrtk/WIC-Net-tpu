@@ -36,7 +36,7 @@ flags.DEFINE_integer('train_steps', 10000, 'Number of training steps')
 flags.DEFINE_integer('train_steps_per_eval', 100, 'Steps per eval and image generation')
 flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
 flags.DEFINE_float('learning_rate', 0.0002, 'LR for both D and G')
-flags.DEFINE_boolean('eval_loss', False, 'Evaluate discriminator and generator loss during eval')
+flags.DEFINE_boolean('eval_loss', True, 'Evaluate discriminator and generator loss during eval')
 flags.DEFINE_boolean('use_tpu', True, 'Use TPU for training')
 
 _NUM_VIZ_IMAGES = 100 # For generating a 10x10 grid of generator samples
@@ -123,6 +123,7 @@ def summary_input_fn(is_training):
     images = features['real_images']
     images = dataset.convert_array_to_image(images)
     tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
+    tf.logging_info("done summary process")
     return input_fn
 
 
