@@ -85,7 +85,7 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
     return c_s + x
 
 
-def discriminator(x, is_training=True, scope='Discriminator'):
+def discriminator(x, a, is_training=True, scope='Discriminator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         dis_dim = 64
         for i in range(5):
