@@ -45,6 +45,13 @@ def _downsampling(x, name):
     return tf.layers.average_pooling2d(x, 2, 2, padding='same', name=name)
 
 
+def embedding(y, in_size, out_size, scope):
+    with tf.variable_scope(scope):
+        V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer())
+        o = tf.matmul(y, V)
+    return o
+
+
 def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
     with tf.variable_scope(scope):
         c_s = _downsampling(x, name='s_down')
@@ -83,11 +90,13 @@ def discriminator(x, is_training=True, scope='Discriminator'):
         dis_dim = 64
         for i in range(5):
             x = _res_block_down(x, dis_dim*(2**i), scope='b_down_'+str(i))
-        x = _leaky_relu(x)
-        x = tf.reshape(x, [-1, 4*4*1024])
-        x = _dense(x, 1, name='fc')
-        return x
-
+        x_feat = _leaky_relu(x)
+        x = tf.reduce_sum(x_feat, axis=[1, 2])
+        emb_a = embedding(a, 6, x.shape[-1], scope='emb')
+        emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
+        o = emb + _dense(x, 1, name='fc')
+        return o
+    
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
