@@ -56,7 +56,7 @@ def model_fn(features, labels, mode, params):
     real_images = features['real_images']
     random_noise = features['random_noise']
 
-    if mode == tf.estimator.ModeKeys.EVAL: summary_writer(real_images)
+    summary_writer(real_images)
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
     generated_images = model.generator(random_noise, is_training=is_training)
