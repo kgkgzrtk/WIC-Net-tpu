@@ -56,6 +56,9 @@ def model_fn(features, labels, mode, params):
     real_images = features['real_images']
     random_noise = features['random_noise']
 
+    #summary
+    tf.summary.image('input_image', real_images[:_NUM_VIZ_IMAGES], _NUM_VIZ_IMAGES)
+
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
     generated_images = model.generator(random_noise, is_training=is_training)
 
@@ -172,7 +175,7 @@ def main(argv):
         if FLAGS.eval_loss:
             # Evaluate loss on test set
             metrics = est.evaluate(input_fn=generate_input_fn(False),
-                                    steps=dataset.NUM_EVAL_IMAGES // FLAGS.batch_size)
+                                    steps=1)
             tf.logging.info('Finished evaluating')
             tf.logging.info(metrics)
 
