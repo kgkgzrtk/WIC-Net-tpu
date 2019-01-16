@@ -34,9 +34,9 @@ flags.DEFINE_integer('batch_size', 1024, 'Batch size for both generator and disc
 flags.DEFINE_integer('num_shards', 8, 'Number of TPU chips')
 flags.DEFINE_integer('train_steps', 10000, 'Number of training steps')
 flags.DEFINE_integer('train_steps_per_eval', 100, 'Steps per eval and image generation')
-flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
+flags.DEFINE_integer('iterations_per_loop', 10, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
 flags.DEFINE_float('learning_rate', 0.0002, 'LR for both D and G')
-flags.DEFINE_boolean('eval_loss', True, 'Evaluate discriminator and generator loss during eval')
+flags.DEFINE_boolean('eval_loss', False, 'Evaluate discriminator and generator loss during eval')
 flags.DEFINE_boolean('use_tpu', True, 'Use TPU for training')
 
 _NUM_VIZ_IMAGES = 100 # For generating a 10x10 grid of generator samples
@@ -55,6 +55,8 @@ def model_fn(features, labels, mode, params):
     batch_size = params['batch_size']
     real_images = features['real_images']
     random_noise = features['random_noise']
+
+    if mode == tf.estimator.ModeKeys.EVAL: summary_writer(real_images)
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
     generated_images = model.generator(random_noise, is_training=is_training)
@@ -117,14 +119,10 @@ def generate_input_fn(is_training):
     return dataset.InputFunction(is_training, FLAGS.noise_dim)
 
 
-def summary_input_fn(is_training):
-    input_fn = dataset.InputFunction(is_training, FLAGS.noise_dim)
-    features, labels = input_fn({'batch_size': FLAGS.batch_size})
-    images = features['real_images'][:_NUM_VIZ_IMAGES]
+def summary_writer(images):
     images = tf.cast((images+1.)*127.5, tf.uint8)
     tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
     tf.logging.info("done summary process")
-    return input_fn
 
 
 def noise_input_fn(params):
@@ -181,8 +179,7 @@ def main(argv):
         tf.logging.info('Finished training step %d' % current_step)
 
         if FLAGS.eval_loss:
-            # Write summary
-            summary_input_fn(False)
+            # Evaluation process
 
         # Render some generated images
         generated_iter = cpu_est.predict(input_fn=noise_input_fn)
