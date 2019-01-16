@@ -119,8 +119,8 @@ def generate_input_fn(is_training):
 
 def summary_input_fn(is_training):
     input_fn = dataset.InputFunction(is_training, FLAGS.noise_dim)
-    features, labels = input_fn({'batch_size': _NUM_VIZ_IMAGES})
-    images = features['real_images']
+    features, labels = input_fn({'batch_size': FLAGS.batch_size})
+    images = features['real_images'][:_NUM_VIZ_IMAGES]
     images = tf.cast((images+1.)*127.5, tf.uint8)
     tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
     tf.logging.info("done summary process")
