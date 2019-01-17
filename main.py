@@ -124,7 +124,6 @@ def summary_writer(images):
     tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
     tf.logging.info("done summary process")
 
-
 def noise_input_fn(params):
     np.random.seed(0)
     noise_dataset = tf.data.Dataset.from_tensors(tf.constant(
@@ -166,10 +165,9 @@ def main(argv):
             model_fn=model_fn,
             use_tpu=False,
             config=config,
-            predict_batch_size=_NUM_VIZ_IMAGES)
+            predict_batch_size=None)
 
     tf.gfile.MakeDirs(os.path.join(FLAGS.model_dir, 'generated_images'))
-    tf.gfile.MakeDirs(os.path.join(FLAGS.model_dir, 'input_images'))
 
     current_step = estimator._load_global_step_from_checkpoint_dir(FLAGS.model_dir) 
     tf.logging.info('Starting training for %d steps, current step: %d' % (FLAGS.train_steps, current_step))
@@ -180,10 +178,8 @@ def main(argv):
         tf.logging.info('Finished training step %d' % current_step)
 
         # Render some generated images
-        #generated_iter = cpu_est.predict(input_fn=noise_input_fn)
-        #images = [p['generated_images'][:, :, :] for p in generated_iter]
-        input_iter = cpu_est.predict(input_fn=generate_input_fn(False))
-        images = [p['input_images'][:, :, :] for p in input_iter]
+        generated_iter = cpu_est.predict(input_fn=noise_input_fn)
+        images = [p['generated_images'][:, :, :] for p in generated_iter]
         assert len(images) == _NUM_VIZ_IMAGES
         image_rows = [np.concatenate(images[i:i+10], axis=0) for i in range(0, _NUM_VIZ_IMAGES, 10)]
         tiled_image = np.concatenate(image_rows, axis=1)
@@ -192,7 +188,7 @@ def main(argv):
 
         step_string = str(current_step).zfill(5)
         file_obj = tf.gfile.Open(
-                os.path.join(FLAGS.model_dir, 'input_images', 'gen_%s.png' % (step_string)), 'w')
+                os.path.join(FLAGS.model_dir, 'generated_images', 'gen_%s.png' % (step_string)), 'w')
         img.save(file_obj, format='png')
         tf.logging.info('Finished generating images')
 
