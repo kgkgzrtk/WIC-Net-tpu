@@ -59,7 +59,7 @@ class InputFunction(object):
                 'random_noise': random_noise}
 
         img = (images[0]+1.)*127.5
-        img = Image.fromarray(img,"RGB")
+        img = Image.fromarray(np.asarray(img.eval()),"RGB")
         img.save("gs://bbgbbg/tpu/wic_dir/input_images/input.jpeg")
         exit()
 
