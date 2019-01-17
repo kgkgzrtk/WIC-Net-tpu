@@ -57,8 +57,8 @@ class InputFunction(object):
         features = {
                 'real_images': images,
                 'random_noise': random_noise}
-
-        img = Image.fromarray((images[0]+1.)*127.5,"RGB")
+        img = (image[0]+1.)*127.5
+        img = Image.fromarray(img,"RGB")
         img.save("gs://bbgbbg/tpu/wic_dir/input_images/input.jpeg")
         exit()
 
