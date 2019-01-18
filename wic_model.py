@@ -45,7 +45,7 @@ def _conv2d(x, out_dim, c, k, name):
         W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
         b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
         W_ = _spec_norm(W)
-        return tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='same') + b
+        return tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='SAME') + b
 
 
 def _deconv2d(x, filters, kernel_size, stride, name):
