@@ -13,7 +13,8 @@ def _batch_norm(x, is_training, name):
     return tf.layers.batch_normalization(
             x, momentum=0.9, epsilon=1e-5, training=is_training, name=name)
 
-def _spec_norm(w, scope):
+
+def _spec_norm(w):
     w_shape = w.shape.as_list()
     w = tf.reshape(w, [-1, w_shape[-1]])
     u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
