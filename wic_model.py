@@ -14,24 +14,24 @@ def _batch_norm(x, is_training, name):
             x, momentum=0.9, epsilon=1e-5, training=is_training, name=name)
 
 def _spec_norm(w, scope):
-    with tf.variable_scope(scope):
-        w_shape = w.shape.as_list()
-        w = tf.reshape(w, [-1, w_shape[-1]])
-        u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
-        u_hat = u
-        v_ = tf.matmul(u_hat, tf.transpose(w))
-        v_hat = tf.nn.l2_normalize(v_)
-        u_ = tf.matmul(v_hat, w)
-        u_hat = tf.nn.l2_normalize(u_)
-        u_hat = tf.stop_gradient(u_hat)
-        v_hat = tf.stop_gradient(v_hat)
-        sigma = tf.matmul(tf.matmul(v_hat, w), tf.transpose(u_hat))
+    w_shape = w.shape.as_list()
+    w = tf.reshape(w, [-1, w_shape[-1]])
+    u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
+    u_hat = u
+    v_ = tf.matmul(u_hat, tf.transpose(w))
+    v_hat = tf.nn.l2_normalize(v_)
+    u_ = tf.matmul(v_hat, w)
+    u_hat = tf.nn.l2_normalize(u_)
+    u_hat = tf.stop_gradient(u_hat)
+    v_hat = tf.stop_gradient(v_hat)
+    sigma = tf.matmul(tf.matmul(v_hat, w), tf.transpose(u_hat))
 
-        with tf.control_dependencies([u.assign(u_hat)]):
-            w_norm = w/sigma
-            w_norm = tf.reshape(w_norm, w_shape)
-        return w_norm
+    with tf.control_dependencies([u.assign(u_hat)]):
+        w_norm = w/sigma
+        w_norm = tf.reshape(w_norm, w_shape)
+    return w_norm
     
+
 def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
@@ -39,8 +39,13 @@ def _dense(x, channels, name):
             name=name)
 
 
-def _conv2d(x, filters, kernel_size, stride, name):
-    #TODO conv func
+def _conv2d(x, out_dim, c, k, name):
+    with tf.variable_scope(name) as scope:
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
+        b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
+        W_ = _spec_norm(W)
+        return tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='same') + b
+
 
 def _deconv2d(x, filters, kernel_size, stride, name):
     return tf.layers.conv2d_transpose(
