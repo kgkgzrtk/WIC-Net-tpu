@@ -13,7 +13,24 @@ def _batch_norm(x, is_training, name):
     return tf.layers.batch_normalization(
             x, momentum=0.9, epsilon=1e-5, training=is_training, name=name)
 
+def _spec_norm(w):
+    w_shape = w.shape.as_list()
+    w = tf.reshape(w, [-1, w_shape[-1]])
+    u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
+    u_hat = u
+    v_ = tf.matmul(u_hat, tf.transpose(w))
+    v_hat = tf.nn.l2_normalize(v_)
+    u_ = tf.matmul(v_hat, w)
+    u_hat = tf.nn.l2_normalize(u_)
+    u_hat = tf.stop_gradient(u_hat)
+    v_hat = tf.stop_gradient(v_hat)
+    sigma = tf.matmul(tf.matmul(v_hat, w), tf.transpose(u_hat))
 
+    with tf.control_dependencies([u.assign(u_hat)]):
+        w_norm = w/sigma
+        w_norm = tf.reshape(w_norm, w_shape)
+    return w_norm
+    
 def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
@@ -26,6 +43,7 @@ def _conv2d(x, filters, kernel_size, stride, name):
             x, filters, [kernel_size, kernel_size],
             strides=[stride, stride], padding='same',
             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
+            kernel_constraint=_spec_norm,
             name=name)
 
 
@@ -48,7 +66,8 @@ def _downsampling(x, name):
 def embedding(y, in_size, out_size, scope):
     with tf.variable_scope(scope):
         V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer())
-        o = tf.matmul(y, V)
+        V_ = _spec_norm(V)
+        o = tf.matmul(y, V_)
     return o
 
 
