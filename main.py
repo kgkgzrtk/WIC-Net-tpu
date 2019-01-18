@@ -47,12 +47,12 @@ model = None
 def model_fn(features, labels, mode, params):
     if mode == tf.estimator.ModeKeys.PREDICT:
         random_noise = features['random_noise']
-        real_images = features['real_images']
         predictions = {
                 'generated_images': model.generator(random_noise, is_training=False),
-                'input_images': real_images
         }
-        return tf.contrib.tpu.TPUEstimatorSpec(mode=mode, predictions=predictions)
+        return tf.contrib.tpu.TPUEstimatorSpec(
+                mode=mode,
+                predictions=predictions,)
 
     batch_size = params['batch_size']
     real_images = features['real_images']
@@ -97,7 +97,8 @@ def model_fn(features, labels, mode, params):
             return tf.contrib.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=g_loss,
-                    train_op=joint_op)
+                    train_op=joint_op
+                    )
 
     #Evaluation
     elif mode == tf.estimator.ModeKeys.EVAL:
@@ -121,8 +122,7 @@ def generate_input_fn(is_training):
 
 def summary_writer(images):
     images = tf.cast((images+1.)*127.5, tf.uint8)
-    tf.summary.image('input_image', images, _NUM_VIZ_IMAGES)
-    tf.logging.info("done summary process")
+    tf.summary.image('input_image', images)
 
 def noise_input_fn(params):
     np.random.seed(0)
@@ -131,6 +131,19 @@ def noise_input_fn(params):
     noise = noise_dataset.make_one_shot_iterator().get_next()
     return {'random_noise': noise}, None
 
+
+def save_images(images, current_step, image_name):
+    assert len(images) == _NUM_VIZ_IMAGES
+    image_rows = [np.concatenate(images[i:i+10], axis=0) for i in range(0, _NUM_VIZ_IMAGES, 10)]
+    tiled_image = np.concatenate(image_rows, axis=1)
+
+    img = dataset.convert_array_to_image(tiled_image)
+
+    step_string = str(current_step).zfill(5)
+    file_obj = tf.gfile.Open(
+            os.path.join(FLAGS.model_dir, image_name, 'img_%s.png' % (step_string)), 'w')
+    img.save(file_obj, format='png')
+    tf.logging.info('Finished save' + image_name)
 
 def main(argv):
     del argv
@@ -144,8 +157,8 @@ def main(argv):
             model_dir=FLAGS.model_dir,
             tpu_config=tf.contrib.tpu.TPUConfig(
                     num_shards=FLAGS.num_shards,
-                    iterations_per_loop=FLAGS.iterations_per_loop,
-                    per_host_input_for_training=False))
+                    iterations_per_loop=FLAGS.iterations_per_loop)
+            )
 
     global dataset, model
     dataset = data_input
@@ -165,7 +178,7 @@ def main(argv):
             model_fn=model_fn,
             use_tpu=False,
             config=config,
-            predict_batch_size=None)
+            predict_batch_size=_NUM_VIZ_IMAGES)
 
     tf.gfile.MakeDirs(os.path.join(FLAGS.model_dir, 'generated_images'))
 
@@ -178,19 +191,13 @@ def main(argv):
         tf.logging.info('Finished training step %d' % current_step)
 
         # Render some generated images
-        generated_iter = cpu_est.predict(input_fn=noise_input_fn)
-        images = [p['generated_images'][:, :, :] for p in generated_iter]
-        assert len(images) == _NUM_VIZ_IMAGES
-        image_rows = [np.concatenate(images[i:i+10], axis=0) for i in range(0, _NUM_VIZ_IMAGES, 10)]
-        tiled_image = np.concatenate(image_rows, axis=1)
-
-        img = dataset.convert_array_to_image(tiled_image)
-
-        step_string = str(current_step).zfill(5)
-        file_obj = tf.gfile.Open(
-                os.path.join(FLAGS.model_dir, 'generated_images', 'gen_%s.png' % (step_string)), 'w')
-        img.save(file_obj, format='png')
-        tf.logging.info('Finished generating images')
+        predict_iter= cpu_est.predict(input_fn=noise_input_fn)
+        image_name_li = ['generated_images'] 
+        images_li = [[]]*len(image_name_li)
+        for p in predict_iter:
+            for i,name in enumerate(image_name_li):
+                images_li[i].append(p[name][:, :, :])
+        [save_images(img, current_step, name) for img, name in zip(images_li, image_name_li)]
 
 
 if __name__ == '__main__':

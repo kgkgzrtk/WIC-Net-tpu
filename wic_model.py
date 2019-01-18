@@ -111,3 +111,6 @@ def generator(x, is_training=True, scope='Generator'):
         x = _conv2d(x, 3, 3, 1, name='final_c')
         x = tf.tanh(x)
         return x
+
+def input_image(x):
+    return x
