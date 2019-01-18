@@ -67,7 +67,7 @@ def _downsampling(x, name):
 def embedding(y, in_size, out_size, scope):
     with tf.variable_scope(scope):
         V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer())
-        V_ = _spec_norm(V, 'sn')
+        V_ = _spec_norm(V)
         o = tf.matmul(y, V_)
     return o
 
