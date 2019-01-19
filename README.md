@@ -1,1 +1,1 @@
-# WIC-Net-tpu
+# WIC-Net for Google Cloud TPU
