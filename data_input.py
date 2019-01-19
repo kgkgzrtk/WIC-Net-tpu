@@ -57,7 +57,7 @@ class InputFunction(object):
         features = {
                 'real_images': images,
                 'random_noise': random_noise}
-        tf.summary.image('input_image', images)
+        #tf.summary.image('input_image', images)
 
         return features, labels
 
