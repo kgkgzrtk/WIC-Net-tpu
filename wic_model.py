@@ -37,15 +37,19 @@ def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
             kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
+            use_bias=False,
             name=name)
 
 
-def _conv2d(x, out_dim, c, k, name):
+def _conv2d(x, out_dim, c, k, name, use_bias=False):
     with tf.variable_scope(name) as scope:
         W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-        b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
         W_ = _spec_norm(W)
-        return tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='SAME') + b
+        y = tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='SAME') 
+        if use_bias:
+            b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
+            return y+b
+        else: return y
 
 
 def _deconv2d(x, filters, kernel_size, stride, name):
@@ -78,7 +82,7 @@ def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn1'))
         x = _downsampling(x, name='down')
-        x = _conv2d(x, out_dim, 3, 1, name='c1')
+        xk = _conv2d(x, out_dim, 3, 1, name='c1')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
         return c_s + x
@@ -88,7 +92,9 @@ def _res_block_down(x, out_dim, scope='res_down'):
     with tf.variable_scope(scope):
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         c_s = _downsampling(c_s, name='s_down')
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c1')
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c2')
         x = _downsampling(x, name='down')
         return c_s + x
@@ -98,9 +104,10 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
-        x  = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
-        x = _conv2d(x, out_dim, 3, 1, name='c1')
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up')
+        x = _conv2d(x, out_dim, 3, 1, name='c1')
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
         return c_s + x
 
@@ -131,6 +138,3 @@ def generator(x, is_training=True, scope='Generator'):
         x = _conv2d(x, 3, 3, 1, name='final_c')
         x = tf.tanh(x)
         return x
-
-def input_image(x):
-    return x
