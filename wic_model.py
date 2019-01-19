@@ -88,7 +88,7 @@ def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
         return c_s + x
 
 
-def _res_block_down(x, out_dim, scope='res_down'):
+def _res_block_down(x, out_dim, is_training, scope='res_down'):
     with tf.variable_scope(scope):
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         c_s = _downsampling(c_s, name='s_down')
@@ -116,7 +116,7 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         dis_dim = 64
         for i in range(5):
-            x = _res_block_down(x, dis_dim*(2**i), scope='b_down_'+str(i))
+            x = _res_block_down(x, dis_dim*(2**i), is_training, scope='b_down_'+str(i))
         x_feat = _leaky_relu(x)
         x = tf.reduce_sum(x_feat, axis=[1, 2])
         emb_a = embedding(a, 6, x.shape[-1], scope='emb')
