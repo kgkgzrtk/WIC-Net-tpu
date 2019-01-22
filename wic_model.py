@@ -60,8 +60,9 @@ def _deconv2d(x, filters, kernel_size, stride, name):
             name=name)
 
 
-def _upsampling(x, name):
+def _upsampling(x, name, mode='deconv'):
     return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+    
 
 
 def _downsampling(x, name):
@@ -82,7 +83,7 @@ def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn1'))
         x = _downsampling(x, name='down')
-        xk = _conv2d(x, out_dim, 3, 1, name='c1')
+        x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
         return c_s + x
@@ -92,6 +93,7 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
     with tf.variable_scope(scope):
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         c_s = _downsampling(c_s, name='s_down')
+        x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c1')
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
@@ -104,6 +106,7 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
+        x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
@@ -131,7 +134,7 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
-            x = tf.layers.dropout(x, rate=0.3, training=is_training)
+            #x = tf.layers.dropout(x, rate=0.3, training=is_training)
             x = _res_block_up(x, ch//2, is_training, scope='b_up_'+str(i))
             ch = ch//2
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
