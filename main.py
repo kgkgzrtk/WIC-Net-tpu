@@ -72,7 +72,8 @@ def model_fn(features, labels, mode, params):
 
     # Calculate generator loss
     g_loss = - tf.reduce_mean(d_on_g_logits)
-    g_loss += 0.001 * tf.reduce_mean(feat_on_g_li - feat_on_data_li)
+    h_loss = [tf.reduce_mean(tf.abs(r - f)) for r,f in zip(feat_on_g_li, feat_on_data_li)]
+    g_loss += 0.001 * tf.reduce_mean(h_loss)
 
     #Train
     if mode == tf.estimator.ModeKeys.TRAIN:

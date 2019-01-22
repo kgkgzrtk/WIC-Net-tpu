@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-import numpy as np
 
 
 def _leaky_relu(x):
@@ -128,7 +127,7 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
         emb_a = embedding(a, 6, x.shape[-1], scope='emb')
         emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
         o = emb + _dense(x, 1, name='fc')
-        return o, np.asarray(feat_li)
+        return o, feat_li
     
 
 def generator(x, is_training=True, scope='Generator'):
