@@ -118,14 +118,16 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
 def discriminator(x, a, is_training=True, scope='Discriminator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         dis_dim = 64
+        feat_li = []
         for i in range(5):
             x = _res_block_down(x, dis_dim*(2**i), is_training, scope='b_down_'+str(i))
+            feat_li.append(x)
         x_feat = _leaky_relu(x)
         x = tf.reduce_sum(x_feat, axis=[1, 2])
         emb_a = embedding(a, 6, x.shape[-1], scope='emb')
         emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
         o = emb + _dense(x, 1, name='fc')
-        return o
+        return o, np.asarray(feat_li)
     
 
 def generator(x, is_training=True, scope='Generator'):

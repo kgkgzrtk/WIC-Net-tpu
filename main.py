@@ -61,8 +61,8 @@ def model_fn(features, labels, mode, params):
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
     generated_images = model.generator(random_noise, is_training=is_training)
 
-    d_on_data_logits = tf.squeeze(model.discriminator(real_images, labels))
-    d_on_g_logits = tf.squeeze(model.discriminator(generated_images, labels))
+    d_on_data_logits, feat_on_data_li = tf.squeeze(model.discriminator(real_images, labels))
+    d_on_g_logits, feat_on_g_li = tf.squeeze(model.discriminator(generated_images, labels))
 
     # Calculate discriminator loss
     d_loss_on_data = tf.reduce_mean(tf.nn.relu(1. - d_on_data_logits))
@@ -72,6 +72,7 @@ def model_fn(features, labels, mode, params):
 
     # Calculate generator loss
     g_loss = - tf.reduce_mean(d_on_g_logits)
+    g_loss += tf.reduce_mean(feat_on_g_li - feat_on_data_li)
 
     #Train
     if mode == tf.estimator.ModeKeys.TRAIN:
