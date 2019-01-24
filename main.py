@@ -78,9 +78,9 @@ def model_fn(features, labels, mode, params):
     #Train
     if mode == tf.estimator.ModeKeys.TRAIN:
         d_optimizer = tf.train.AdamOptimizer(
-                learning_rate=FLAGS.learning_rate, beta1=0.5)
+                learning_rate=FLAGS.learning_rate, beta1=0.0, beta2=0.9)
         g_optimizer = tf.train.AdamOptimizer(
-                learning_rate=FLAGS.learning_rate, beta1=0.5)
+                learning_rate=FLAGS.learning_rate, beta1=0.0, beta2=0.9)
 
         if FLAGS.use_tpu:
             d_optimizer = tf.contrib.tpu.CrossShardOptimizer(d_optimizer)
