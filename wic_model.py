@@ -93,7 +93,6 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
     with tf.variable_scope(scope):
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         c_s = _downsampling(c_s, name='s_down')
-        x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c1')
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c2')
         x = _downsampling(x, name='down')
@@ -118,6 +117,7 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
         dis_dim = 64
         feat_li = []
         for i in range(5):
+            if i<4: x = tf.layers.dropout(x, rate=0.5, training=is_training)
             x = _res_block_down(x, dis_dim*(2**i), is_training, scope='b_down_'+str(i))
             feat_li.append(x)
         x_feat = _leaky_relu(x)
@@ -134,7 +134,6 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
-            #x = tf.layers.dropout(x, rate=0.3, training=is_training)
             x = _res_block_up(x, ch//2, is_training, scope='b_up_'+str(i))
             ch = ch//2
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
