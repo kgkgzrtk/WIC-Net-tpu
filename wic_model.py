@@ -103,7 +103,7 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
-        x = tf.layers.dropout(x, rate=0.3, training=is_training)
+        #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
