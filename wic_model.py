@@ -94,9 +94,7 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         c_s = _downsampling(c_s, name='s_down')
         x = tf.layers.dropout(x, rate=0.3, training=is_training)
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c1')
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c2')
         x = _downsampling(x, name='down')
         return c_s + x
