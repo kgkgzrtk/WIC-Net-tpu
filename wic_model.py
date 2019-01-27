@@ -61,7 +61,7 @@ def _deconv2d(x, filters, kernel_size, stride, name):
 
 
 def _upsampling(x, name, mode='deconv'):
-    return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+    return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=False, name=name)
     
 
 
