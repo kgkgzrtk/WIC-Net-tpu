@@ -56,7 +56,7 @@ def _deconv2d(x, out_dim, c, k, name, use_bias=False):
     with tf.variable_scope(name) as scope:
         x_shape = x.get_shape().as_list()
         out_shape = [x_shape[0], x_shape[1]*k, x_shape[2]*k, out_dim]
-        W = tf.get_variable('w', [c, c, out_dim, x.get_shape()[-1]]i, initializer=tf.truncated_normal_initializer(stddev=0.02))
+        W = tf.get_variable('w', [c, c, out_dim, x.get_shape()[-1]], initializer=tf.truncated_normal_initializer(stddev=0.02))
         W_ = _spec_norm(W)
         y = tf.nn.conv2d_transpose(x, W_, out_shape, strides=[1, k, k, 1], padding='SAME')
         if use_bias:
