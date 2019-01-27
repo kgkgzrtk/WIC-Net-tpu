@@ -52,17 +52,25 @@ def _conv2d(x, out_dim, c, k, name, use_bias=False):
         else: return y
 
 
-def _deconv2d(x, filters, kernel_size, stride, name):
-    return tf.layers.conv2d_transpose(
-            x, filters, [kernel_size, kernel_size],
-            strides=[stride, stride], padding='same',
-            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
-            name=name)
+def _deconv2d(x, out_dim, c, k, name, use_bias=False):
+    with tf.variable_scope(name) as scope:
+        x_shape = x.get_shape().as_list()
+        out_shape = [x_shape[0], x_shape[1]*k, x_shape[2]*k, out_dim]
+        W = tf.get_variable('w', [c, c, out_dim, x.get_shape()[-1]]i, initializer=tf.truncated_normal_initializer(stddev=0.02))
+        W_ = _spec_norm(W)
+        y = tf.nn.conv2d_transpose(x, W_, out_shape, strides=[1, k, k, 1], padding='SAME')
+        if use_bias:
+            b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
+            return y+b
+        else: return y
 
+        
 
 def _upsampling(x, name, mode='deconv'):
-    #return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=False, name=name)
-    return tf.image.resize_images(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True)
+    if mode == 'deconv':
+        return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
+    else: 
+        return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
     
 
 
