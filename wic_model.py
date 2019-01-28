@@ -66,7 +66,7 @@ def _deconv2d(x, out_dim, c, k, name, use_bias=False):
 
         
 
-def _upsampling(x, name, mode='deconv'):
+def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     else: 
@@ -113,10 +113,10 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
         c_s = _upsampling(x, name='s_up')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
+        x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
+        x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
         return c_s + x
 
@@ -145,7 +145,7 @@ def generator(x, is_training=True, scope='Generator'):
         for i in range(5):
             x = _res_block_up(x, ch//2, is_training, scope='b_up_'+str(i))
             ch = ch//2
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
-        x = _conv2d(x, 3, 3, 1, name='final_c')
+        x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
+        x = _conv2d(x, 3, 3, 1, use_bias=True, name='final_c')
         x = tf.tanh(x)
         return x
