@@ -143,7 +143,7 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
-            x = _res_block_up(x, ch//2, is_training, fisrt=(i==0), scope='b_up_'+str(i))
+            x = _res_block_up(x, ch//2, is_training, first=(i==0), scope='b_up_'+str(i))
             ch = ch//2
         x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
         x = _conv2d(x, 3, 3, 1, use_bias=True, name='final_c')
