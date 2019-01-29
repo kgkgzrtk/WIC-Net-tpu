@@ -110,11 +110,10 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up')
-        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
+        up_x = _upsampling(x, name='s_up')
+        c_s = _conv2d(up_x, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
-        x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up')
+        x = _leaky_relu(_batch_norm(up_x, is_training, name='bn1'))
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
