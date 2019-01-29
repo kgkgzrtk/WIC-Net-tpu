@@ -94,7 +94,8 @@ def model_fn(features, labels, mode, params):
                     g_loss,
                     var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Generator'))
             increment_step = tf.assign_add(tf.train.get_or_create_global_step(), 1)
-            joint_op = tf.group([d_step, g_step, increment_step])
+            num_iter = 3
+            joint_op = tf.group([d_step]*num_iter + [g_step, increment_step])
 
             return tf.contrib.tpu.TPUEstimatorSpec(
                     mode=mode,
