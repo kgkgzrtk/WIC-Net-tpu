@@ -64,13 +64,36 @@ def _deconv2d(x, out_dim, c, k, name, use_bias=False):
             return y+b
         else: return y
 
-        
+
+
+def _pixel_shuffler(image, out_shape, r=2, c=4, name='ps'):
+    with tf.variable_scope(name) as scope:
+        y_conv = _conv2d(image, out_shape[-1]*(r**2), c=c, k=1, name='first_conv')
+        y_list = tf.split(y_conv, out_shape[3], 3)
+        pix_map_list = []
+        for y in y_list:
+            b, h, w, c = y.get_shape().as_list()
+            pix_map = tf.reshape(y, [b, h, w, r, r])
+            pix_map = tf.transpose(pix_map, perm=[0, 1, 2, 4, 3])
+            pix_map = tf.split(pix_map,h,1)
+            pix_map = tf.concat([tf.squeeze(m,1) for m in pix_map],2)
+            pix_map = tf.split(pix_map,w,1)
+            pix_map = tf.concat([tf.squeeze(m,1) for m in pix_map],2)
+            pix_map = tf.reshape(pix_map, [b, h*r, w*r, 1])
+            pix_map_list.append(pix_map)
+        out = tf.concat(pix_map_list, 3)
+        return out
+
 
 def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
-    else: 
+    elif mode == 'bi':
         return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+    elif mode == 'ps':
+        b, h, w, c = x.get_shape().as_list()
+        out_shape = [b, h*2, w*2, c]
+        return _pixel_shuffler(x, out_shape)
     
 
 
@@ -110,11 +133,11 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up', mode=('deconv' if first else 'bi' ))
+        c_s = _upsampling(x, name='s_up', mode=('deconv' if first else 'ps' ))
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up', mode=('deconv' if first else 'bi' ))
+        x = _upsampling(x, name='up', mode=('deconv' if first else 'ps' ))
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
