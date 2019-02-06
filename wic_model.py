@@ -101,6 +101,8 @@ def _upsampling(x, name, mode='bi'):
         trans1 = transforms.ToTensor()
         pil_img = tf.map_fn(lambda img: img.resize(out_shape, resample=Image.BILINEAR), trans(x))
         return trans1(pil_img)
+    elif mode == 'cv2':
+        return cv2.resize(x, out_shape, interpolation=cv2.INTER_LINEAR)
     
 
 
@@ -140,11 +142,11 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up', mode='pil')
+        #c_s = _upsampling(x, name='s_up', mode='pil')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up', mode='pil')
+        #x = _upsampling(x, name='up', mode='pil')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
@@ -173,6 +175,7 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
+            x = _upsampling(x, name='up_'+str(i))
             x = _res_block_up(x, ch//2, is_training, first=(i==0), scope='b_up_'+str(i))
             ch = ch//2
         x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
