@@ -96,7 +96,10 @@ def _upsampling(x, name, mode='bi'):
     elif mode == 'ps':
         return _pixel_shuffler(x, out_shape)
     elif mode == 'pil':
-        return tf.map_fn(lambda img: img.resize(out_shape, resample=Image.BILINEAR), x)
+        trans = transforms.ToPILImage()
+        trans1 = transforms.ToTensor()
+        pil_img = tf.map_fn(lambda img: img.resize(out_shape, resample=Image.BILINEAR), trans(x))
+        return trans1(pil_img)
     
 
 
