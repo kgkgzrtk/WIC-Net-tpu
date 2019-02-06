@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from PIL import Image
+from torchvision import transforms
 
 
 def _leaky_relu(x):
