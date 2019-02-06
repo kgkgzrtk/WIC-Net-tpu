@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from PIL import Image
 
 
 def _leaky_relu(x):
@@ -86,14 +87,16 @@ def _pixel_shuffler(image, out_shape, r=2, c=4, name='ps'):
 
 
 def _upsampling(x, name, mode='bi'):
+    b, h, w, c = x.get_shape().as_list()
+    out_shape = [b, h*2, w*2, c]
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
         return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
     elif mode == 'ps':
-        b, h, w, c = x.get_shape().as_list()
-        out_shape = [b, h*2, w*2, c]
         return _pixel_shuffler(x, out_shape)
+    elif mode == 'pil':
+        return tf.map_fn(lambda img: img.resize(out_shape, resample=Image.BILINEAR), x)
     
 
 
@@ -133,11 +136,11 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up', mode=('deconv' if first else 'ps' ))
+        c_s = _upsampling(x, name='s_up', mode='pil')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up', mode=('deconv' if first else 'ps' ))
+        x = _upsampling(x, name='up', mode='pil')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
