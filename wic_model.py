@@ -67,7 +67,6 @@ def _deconv2d(x, out_dim, c, k, name, use_bias=False):
         else: return y
 
 
-
 def _pixel_shuffler(image, out_shape, r=2, c=4, name='ps'):
     with tf.variable_scope(name) as scope:
         y_conv = _conv2d(image, out_shape[-1]*(r**2), c=c, k=1, name='first_conv')
@@ -93,7 +92,7 @@ def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
-        return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+        return tf.image.resize_nearest_neighbor(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
     elif mode == 'ps':
         return _pixel_shuffler(x, out_shape)
     elif mode == 'pil':
@@ -142,11 +141,11 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        #c_s = _upsampling(x, name='s_up', mode='pil')
+        c_s = _upsampling(x, name='s_up', mode='bi')
         c_s = _conv2d(x, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        #x = _upsampling(x, name='up', mode='pil')
+        x = _upsampling(x, name='up', mode='bi')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
@@ -175,7 +174,6 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
-            x = _upsampling(x, name='up_'+str(i), mode='bi')
             x = _res_block_up(x, ch//2, is_training, first=(i==0), scope='b_up_'+str(i))
             ch = ch//2
         x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
