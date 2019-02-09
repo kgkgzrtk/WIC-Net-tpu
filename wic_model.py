@@ -95,7 +95,7 @@ def _upsampling(x, name, mode='bi'):
     elif mode == 'ps':
         return _pixel_shuffler(x, out_shape)
     elif mode == 'keras':
-        return tf.contrib.keras.layers.Upsampling2D(2,2)(x)
+        return tf.keras.layers.UpSampling2D(2,2)(x)
 
 
 def _downsampling(x, name):
