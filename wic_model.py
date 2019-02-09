@@ -94,6 +94,8 @@ def _upsampling(x, name, mode='bi'):
         return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
     elif mode == 'ps':
         return _pixel_shuffler(x, out_shape)
+    elif mode == 'keras':
+        return tf.contrib.keras.layers.Upsampling2D(2,2)(x)
 
 
 def _downsampling(x, name):
@@ -117,7 +119,8 @@ def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
-        return c_s + x
+        x = tf.add(x, c_x)
+        return x
 
 
 def _res_block_down(x, out_dim, is_training, scope='res_down'):
@@ -127,20 +130,22 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c1')
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, name='c2')
         x = _downsampling(x, name='down')
-        return c_s + x
+        x = tf.add(x, c_s)
+        return x
 
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up', mode='bi')
+        c_s = _upsampling(x, name='s_up', mode='keras')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up', mode='bi')
+        x = _upsampling(x, name='up', mode='keras')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
-        return c_s + x
+        x = tf.add(x, c_s)
+        return x
 
 
 def discriminator(x, a, is_training=True, scope='Discriminator'):
