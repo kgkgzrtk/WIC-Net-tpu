@@ -91,7 +91,7 @@ def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
-        return tf.image.resize_area(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+        return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=False, name=name)
     elif mode == 'ps':
         return _pixel_shuffler(x, out_shape)
 
