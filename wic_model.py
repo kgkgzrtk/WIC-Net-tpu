@@ -16,6 +16,8 @@ def _batch_norm(x, is_training, name):
 
 
 def _spec_norm(w):
+    return w
+    """
     w_shape = w.shape.as_list()
     w = tf.reshape(w, [-1, w_shape[-1]])
     u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
@@ -32,6 +34,7 @@ def _spec_norm(w):
         w_norm = w/sigma
         w_norm = tf.reshape(w_norm, w_shape)
     return w_norm
+    """
     
 
 def _dense(x, channels, name):
