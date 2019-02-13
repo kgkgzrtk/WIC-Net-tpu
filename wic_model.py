@@ -16,8 +16,6 @@ def _batch_norm(x, is_training, name):
 
 
 def _spec_norm(w):
-    return w
-    """
     w_shape = w.shape.as_list()
     w = tf.reshape(w, [-1, w_shape[-1]])
     u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
@@ -34,7 +32,6 @@ def _spec_norm(w):
         w_norm = w/sigma
         w_norm = tf.reshape(w_norm, w_shape)
     return w_norm
-    """
     
 
 def _dense(x, channels, name):
@@ -139,11 +136,11 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 
 def _res_block_up(x, out_dim, is_training, first=False, scope='res_up'):
     with tf.variable_scope(scope):
-        c_s = _upsampling(x, name='s_up', mode='keras')
+        c_s = _upsampling(x, name='s_up', mode='bi')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
-        x = _upsampling(x, name='up', mode='keras')
+        x = _upsampling(x, name='up', mode='bi')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
         x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
