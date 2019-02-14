@@ -13,7 +13,7 @@ def _leaky_relu(x):
 
 def _batch_norm(x, is_training, name):
     return tf.layers.batch_normalization(
-            x, momentum=0.9, epsilon=1e-5, training=is_training, name=name)
+            x, momentum=0.9, epsilon=1e-5, training=is_training, fused=True, name=name)
 
 
 def _spec_norm(w):
@@ -43,14 +43,14 @@ def _dense(x, channels, name):
             name=name)
 
 
-def _conv2d(x, out_dim, c, k, name, use_bias=False):
+def _conv2d(x, out_dim, c, k, name, use_bias=True):
     with tf.variable_scope(name) as scope:
         W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
         W_ = _spec_norm(W)
         y = tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='SAME') 
         if use_bias:
             b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
-            return y+b
+            return tf.add(y,b)
         else: return y
 
 
