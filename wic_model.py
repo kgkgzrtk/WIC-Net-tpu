@@ -60,6 +60,10 @@ def _bilinear(x, out_shape):
     size = 2 * s - s % 2
     karnel = np.zeros([size, size], dtype=np.float32)
     scale_factor = (size + 1)//2
+    if size % 2 == 1:
+        c = scale_factor - 1
+    else:
+        c = scale_factor - 0.5
     for x in range(size):
         for y in range(size):
             karnel[x,y] = (1 - abs(x - c)/scale_factor)*(1 - abs(y - c)/scale_factor)
