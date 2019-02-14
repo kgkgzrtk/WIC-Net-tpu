@@ -57,16 +57,16 @@ def _conv2d(x, out_dim, c, k, name, use_bias=False):
 def _bilinear(x, out_shape):
     b, h, w, ch = x.shape.as_list()
     s = 2
-    size = 2 * s - s % 2
+    size = (2 * s - s % 2)
     karnel = np.zeros([size, size], dtype=np.float32)
     scale_factor = (size + 1)//2
     if size % 2 == 1:
         c = scale_factor - 1
     else:
         c = scale_factor - 0.5
-    for x in range(size):
-        for y in range(size):
-            karnel[x,y] = (1 - abs(x - c)/scale_factor)*(1 - abs(y - c)/scale_factor)
+    for i in range(size):
+        for j in range(size):
+            karnel[i,j] = (1 - abs(x - c)/scale_factor)*(1 - abs(y - c)/scale_factor)
     w_filter = np.zeros([size, size, ch, ch])
     for i in range(ch):
         w_filter[:,:,i,i] = karnel
