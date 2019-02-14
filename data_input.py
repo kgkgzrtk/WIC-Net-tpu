@@ -44,9 +44,9 @@ class InputFunction(object):
         batch_size = params['batch_size']
         dataset = tf.data.TFRecordDataset([self.data_file])
         dataset = dataset.map(parser, num_parallel_calls=8)
-        dataset = dataset.prefetch(4*batch_size).cache().repeat()
+        dataset = dataset.cache().repeat()
         dataset = dataset.batch(batch_size, drop_remainder=False)
-        dataset = dataset.prefetch(2)
+        dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
         images, labels = dataset.make_one_shot_iterator().get_next()
 
         images = tf.reshape(images, [batch_size, 128, 128, 3])
