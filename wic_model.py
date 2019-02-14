@@ -66,7 +66,7 @@ def _bilinear(x, out_shape):
         c = scale_factor - 0.5
     for i in range(size):
         for j in range(size):
-            karnel[i,j] = (1 - abs(x - c)/scale_factor)*(1 - abs(y - c)/scale_factor)
+            karnel[i,j] = (1 - abs(i - c)/scale_factor)*(1 - abs(j - c)/scale_factor)
     w_filter = np.zeros([size, size, ch, ch])
     for i in range(ch):
         w_filter[:,:,i,i] = karnel
