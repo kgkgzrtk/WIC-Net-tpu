@@ -53,6 +53,23 @@ def _conv2d(x, out_dim, c, k, name, use_bias=False):
         else: return y
 
 
+def _bilinear(x, out_shape):
+    b, h, w, ch = x.shape.as_list()
+    s = 2
+    size = 2 * s - s % 2
+    karnel = np.zeros([size, size], dtype=np.float32)
+    scale_factor = (size + 1)//2
+    for x in range(size):
+        for y in range(size):
+            karnel[x,y] = (1 - abs(x - c)/scale_factor)*(1 - abs(y - c)/scale_factor)
+    w_filter = np.zeros([size, size, ch, ch])
+    for i in range(ch):
+        w_filter[:,:,i,i] = karnel
+    conv_filter = tf.constant(w_filter, dtype=tf.float32)
+    return tf.nn.conv2d_transpose(x, conv_filter, out_shape, strides=[1,s,s,1], padding='SAME')
+
+
+
 def _deconv2d(x, out_dim, c, k, name, use_bias=False):
     with tf.variable_scope(name) as scope:
         x_shape = x.get_shape().as_list()
@@ -91,12 +108,9 @@ def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
-        return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
-    elif mode == 'ps':
-        return _pixel_shuffler(x, out_shape)
-    elif mode == 'keras':
-        return tf.keras.layers.UpSampling2D(size=(2,2))(x)
-
+        # BC Edge bug
+        #return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+        return _bilinear(x, out_shape)
 
 def _downsampling(x, name):
     return tf.layers.average_pooling2d(x, 2, 2, padding='same', name=name)
