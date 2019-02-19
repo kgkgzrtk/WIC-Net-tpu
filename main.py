@@ -74,7 +74,7 @@ def model_fn(features, labels, mode, params):
     #g_loss = - tf.reduce_mean(d_on_g_logits)
     h_loss = [tf.reduce_mean(tf.abs(r - f)) for r,f in zip(feat_on_g_li, feat_on_data_li)]
     cons_loss = tf.losses.mean_squared_error(real_images, generated_images)
-    g_loss = tf.reduce_mean(cons_loss)
+    g_loss = h_loss
 
     #Train
     if mode == tf.estimator.ModeKeys.TRAIN:
