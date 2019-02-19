@@ -114,8 +114,8 @@ def _upsampling(x, name, mode='bi'):
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
         # BC Edge bug
-        #return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
-        return _bilinear(x, out_shape)
+        return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
+        #return _bilinear(x, out_shape)
 
 def _downsampling(x, name):
     return tf.layers.average_pooling2d(x, 2, 2, padding='same', name=name)
