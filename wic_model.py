@@ -38,14 +38,14 @@ def _spec_norm(w):
 def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
-            kernel_initializer=tf.glorot_uniform_initializer(),
+            kernel_initializer=tf.glorot_uniform_initializer(dtype=tf.float32),
             use_bias=False,
             name=name)
 
 
 def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
     with tf.variable_scope(name) as scope:
-        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer())
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer(dtype=tf.float32))
         if sn:
             W = _spec_norm(W)
         y = tf.nn.conv2d(x, W, strides=[1, k, k, 1], padding=padding) 
@@ -122,7 +122,7 @@ def _downsampling(x, name):
 
 def embedding(y, in_size, out_size, scope):
     with tf.variable_scope(scope):
-        V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer())
+        V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer(dtype=tf.float32))
         V_ = _spec_norm(V)
         o = tf.matmul(y, V_)
     return o
@@ -157,10 +157,10 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
         c_s = _upsampling(x, name='s_up', mode='bi')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
-        x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up', mode='bi')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
-        x = _leaky_relu(_batch_norm(x, is_training, name='bn2'))
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn2'))
         x = _conv2d(x, out_dim, 3, 1, name='c2')
         x = tf.add(x, c_s)
         return x
@@ -174,7 +174,7 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
             #if i<4: x = tf.layers.dropout(x, rate=0.5, training=is_training)
             x = _res_block_down(x, dis_dim*(2**i), is_training, scope='b_down_'+str(i))
             feat_li.append(x)
-        x_feat = _leaky_relu(x)
+        x_feat = tf.nn.relu(x)
         x = tf.reduce_sum(x_feat, axis=[1, 2])
         emb_a = embedding(a, 6, x.shape[-1], scope='emb')
         emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
@@ -189,7 +189,7 @@ def generator(x, is_training=True, scope='Generator'):
         for i in range(5):
             x = _res_block_up(x, ch, is_training, scope='b_up_'+str(i))
             ch = ch//2
-        x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
+        x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
         x = _conv2d(x, 3, 3, 1, name='final_c')
         x = tf.tanh(x)
         return x
