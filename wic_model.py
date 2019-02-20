@@ -38,14 +38,14 @@ def _spec_norm(w):
 def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
-            kernel_initializer=tf.glorot_uniform_initializer(stddev=0.02),
+            kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
             name=name)
 
 
 def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
     with tf.variable_scope(name) as scope:
-        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer(stddev=0.02))
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer())
         if sn:
             W = _spec_norm(W)
         y = tf.nn.conv2d(x, W, strides=[1, k, k, 1], padding=padding) 
@@ -114,9 +114,7 @@ def _upsampling(x, name, mode='bi'):
     if mode == 'deconv':
         return _deconv2d(x, x.get_shape().dims[-1].value, 3, 2, name=name) 
     elif mode == 'bi':
-        # BC Edge bug
         return tf.image.resize_bilinear(x, [x.shape[1]*2, x.shape[2]*2], align_corners=True, name=name)
-        #return _bilinear(x, out_shape)
 
 def _downsampling(x, name):
     return tf.layers.average_pooling2d(x, 2, 2, padding='same', name=name)
