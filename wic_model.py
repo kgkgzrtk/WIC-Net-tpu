@@ -134,7 +134,7 @@ def embedding(y, in_size, out_size, scope):
 def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
     with tf.variable_scope(scope):
         c_s = _downsampling(x, name='s_down')
-        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
+        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID')
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn1'))
         x = _downsampling(x, name='down')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
@@ -159,7 +159,6 @@ def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up', mode='bi')
         c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID')
-        #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up', mode='bi')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
@@ -174,7 +173,6 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
         dis_dim = 64
         feat_li = []
         for i in range(5):
-            #if i<4: x = tf.layers.dropout(x, rate=0.5, training=is_training)
             x = _res_block_down(x, dis_dim*(2**i), is_training, scope='b_down_'+str(i))
             feat_li.append(x)
         x_feat = tf.nn.relu(x)
