@@ -35,12 +35,14 @@ def _spec_norm(w):
     return w_norm
     
 
-def _dense(x, channels, name):
-    return tf.layers.dense(
-            x, channels,
-            kernel_initializer=tf.glorot_uniform_initializer(dtype=tf.float32),
-            use_bias=False,
-            name=name)
+def _dense(x, channels, sn=False, name):
+    with tf.variable_scope(name) as scope:
+        matrix = tf.get_variable('w',
+                    [x.shape[-1], channels],
+                    initializer=tf.glorot_uniform_initializer(dtype=tf.float32))
+        if sn:
+            matrix = _spec_norm(matrix)
+        return tf.matmul(x, matrix)
 
 
 def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
@@ -178,12 +180,12 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
         x = tf.reduce_sum(x_feat, axis=[1, 2])
         emb_a = embedding(a, 6, x.shape[-1], scope='emb')
         emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
-        o = emb + _dense(x, 1, name='fc')
+        o = emb + _dense(x, 1, sn=True, name='fc')
         return o, feat_li
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-        ch = 64
+        ch = 512
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
