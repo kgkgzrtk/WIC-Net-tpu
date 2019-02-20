@@ -38,16 +38,17 @@ def _spec_norm(w):
 def _dense(x, channels, name):
     return tf.layers.dense(
             x, channels,
-            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
+            kernel_initializer=tf.glorot_uniform_initializer(stddev=0.02),
             use_bias=False,
             name=name)
 
 
-def _conv2d(x, out_dim, c, k, name, use_bias=True):
+def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
     with tf.variable_scope(name) as scope:
-        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.truncated_normal_initializer(stddev=0.02))
-        W_ = _spec_norm(W)
-        y = tf.nn.conv2d(x, W_, strides=[1, k, k, 1], padding='SAME') 
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer(stddev=0.02))
+        if sn:
+            W = _spec_norm(W)
+        y = tf.nn.conv2d(x, W, strides=[1, k, k, 1], padding=padding) 
         if use_bias:
             b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
             return tf.add(y,b)
@@ -156,7 +157,7 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up', mode='bi')
-        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c')
+        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c' padding='VALID')
         #x = tf.layers.dropout(x, rate=0.3, training=is_training)
         x = _leaky_relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up', mode='bi')
@@ -181,17 +182,16 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
         emb = tf.reduce_sum(emb_a * x, axis=1, keepdims=True)
         o = emb + _dense(x, 1, name='fc')
         return o, feat_li
-    
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-        ch = 1024
+        ch = 64
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
-            x = _res_block_up(x, ch//2, is_training, scope='b_up_'+str(i))
+            x = _res_block_up(x, ch, is_training, scope='b_up_'+str(i))
             ch = ch//2
         x = _leaky_relu(_batch_norm(x, is_training, name='bn'))
-        x = _conv2d(x, 3, 3, 1, use_bias=True, name='final_c')
+        x = _conv2d(x, 3, 3, 1, name='final_c')
         x = tf.tanh(x)
         return x

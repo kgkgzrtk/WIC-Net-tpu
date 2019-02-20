@@ -29,9 +29,10 @@ flags.DEFINE_string(
 
 # Model specific paramenters
 flags.DEFINE_string('model_dir', '', 'Output model directory')
-flags.DEFINE_integer('noise_dim', 1024, 'Number of dimensions for the noise vector')
+flags.DEFINE_integer('noise_dim', 128, 'Number of dimensions for the noise vector')
 flags.DEFINE_integer('batch_size', 1024, 'Batch size for both generator and discriminator')
 flags.DEFINE_integer('num_shards', 8, 'Number of TPU chips')
+flags.DEFINE_integer('num_dis_iter', 5, 'Number of iteration per epoch for Discriminator')
 flags.DEFINE_integer('train_steps', 400000, 'Number of training steps')
 flags.DEFINE_integer('train_steps_per_eval', 1000, 'Steps per eval and image generation')
 flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
@@ -95,8 +96,7 @@ def model_fn(features, labels, mode, params):
                     g_loss,
                     var_list=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='Generator'))
             increment_step = tf.assign_add(tf.train.get_or_create_global_step(), 1)
-            num_iter = 3
-            joint_op = tf.group([d_step]*num_iter + [g_step, increment_step])
+            joint_op = tf.group([d_step]*FLAGS.num_dis_iter + [g_step, increment_step])
 
             return tf.contrib.tpu.TPUEstimatorSpec(
                     mode=mode,
