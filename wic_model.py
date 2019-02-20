@@ -33,9 +33,10 @@ def _spec_norm(w):
         w_norm = w/sigma
         w_norm = tf.reshape(w_norm, w_shape)
     return w_norm
-    
 
-def _dense(x, channels, sn=False, name):
+
+
+def _dense(x, channels, sn=False, name='linear'):
     with tf.variable_scope(name) as scope:
         matrix = tf.get_variable('w',
                     [x.shape[-1], channels],
