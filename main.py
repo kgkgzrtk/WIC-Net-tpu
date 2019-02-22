@@ -36,7 +36,7 @@ flags.DEFINE_integer('num_dis_iter', 5, 'Number of iteration per epoch for Discr
 flags.DEFINE_integer('train_steps', 400000, 'Number of training steps')
 flags.DEFINE_integer('train_steps_per_eval', 1000, 'Steps per eval and image generation')
 flags.DEFINE_integer('iterations_per_loop', 100, 'Steps per interior TPU loop. Should be less than  --train_steps_per_eval')
-flags.DEFINE_float('learning_rate', 1e-5, 'LR for both D and G')
+flags.DEFINE_float('learning_rate', 2e-4, 'LR for both D and G')
 flags.DEFINE_boolean('eval_loss', False, 'Evaluate discriminator and generator loss during eval')
 flags.DEFINE_boolean('use_tpu', True, 'Use TPU for training')
 
