@@ -40,7 +40,7 @@ def _dense(x, channels, sn=False, name='linear'):
     with tf.variable_scope(name) as scope:
         matrix = tf.get_variable('w',
                     [x.shape[-1], channels],
-                    initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2), dtype=tf.float32))
+                    initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2.), dtype=tf.float32))
         if sn:
             matrix = _spec_norm(matrix)
         return tf.matmul(x, matrix)
@@ -48,7 +48,7 @@ def _dense(x, channels, sn=False, name='linear'):
 
 def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
     with tf.variable_scope(name) as scope:
-        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2), dtype=tf.float32))
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2.), dtype=tf.float32))
         if sn:
             W = _spec_norm(W)
         y = tf.nn.conv2d(x, W, strides=[1, k, k, 1], padding=padding) 
@@ -125,7 +125,7 @@ def _downsampling(x, name):
 
 def embedding(y, in_size, out_size, scope):
     with tf.variable_scope(scope):
-        V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2), dtype=tf.float32))
+        V = tf.get_variable('w', [in_size, out_size], initializer=tf.glorot_uniform_initializer(scale=tf.sqrt(2.), dtype=tf.float32))
         V_ = _spec_norm(V)
         o = tf.matmul(y, V_)
     return o
