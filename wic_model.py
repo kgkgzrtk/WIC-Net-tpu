@@ -9,7 +9,7 @@ from PIL import Image
 
 _initializer = tf.glorot_uniform_initializer()
 _initializer_sc = tf.glorot_uniform_initializer()
-_initializer.scale = tf.sqrt(2.)
+_initializer.scale = np.sqrt(2.)
 
 
 def _leaky_relu(x):
