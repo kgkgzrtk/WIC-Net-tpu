@@ -8,7 +8,9 @@ from PIL import Image
 
 
 _initializer = tf.glorot_uniform_initializer()
-_initializer.scale = 2.
+_initializer_sc = tf.glorot_uniform_initializer()
+_initializer.scale = tf.sqrt(2.)
+
 
 def _leaky_relu(x):
     return tf.nn.leaky_relu(x, alpha=0.2)
@@ -19,10 +21,10 @@ def _batch_norm(x, is_training, name):
             x, momentum=0.9, epsilon=1e-5, training=is_training, fused=True, name=name)
 
 
-def _spec_norm(w):
+def _spec_norm(w, initializer):
     w_shape = w.shape.as_list()
     w = tf.reshape(w, [-1, w_shape[-1]])
-    u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
+    u = tf.get_variable("u", [1, w_shape[-1]], initializer=initializer, trainable=False)
     u_hat = u
     v_ = tf.matmul(u_hat, tf.transpose(w))
     v_hat = tf.nn.l2_normalize(v_)
@@ -45,15 +47,15 @@ def _dense(x, channels, sn=False, name='linear'):
                     [x.shape[-1], channels],
                     initializer=_initializer)
         if sn:
-            matrix = _spec_norm(matrix)
+            matrix = _spec_norm(matrix, _initializer)
         return tf.matmul(x, matrix)
 
 
-def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME'):
+def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME', initializer=_initializer):
     with tf.variable_scope(name) as scope:
-        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=_initializer)
+        W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=initializer)
         if sn:
-            W = _spec_norm(W)
+            W = _spec_norm(W, initializer)
         y = tf.nn.conv2d(x, W, strides=[1, k, k, 1], padding=padding) 
         if use_bias:
             b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
@@ -86,8 +88,8 @@ def _deconv2d(x, out_dim, c, k, name, use_bias=False):
     with tf.variable_scope(name) as scope:
         x_shape = x.get_shape().as_list()
         out_shape = [x_shape[0], x_shape[1]*k, x_shape[2]*k, out_dim]
-        W = tf.get_variable('w', [c, c, out_dim, x.get_shape()[-1]], initializer=tf.truncated_normal_initializer(stddev=0.02))
-        W_ = _spec_norm(W)
+        W = tf.get_variable('w', [c, c, out_dim, x.get_shape()[-1]], initializer=_initializer)
+        W_ = _spec_norm(W, _initializer)
         y = tf.nn.conv2d_transpose(x, W_, out_shape, strides=[1, k, k, 1], padding='SAME')
         if use_bias:
             b = tf.get_variable('b', [out_dim], initializer=tf.constant_initializer(0.0))
@@ -129,7 +131,7 @@ def _downsampling(x, name):
 def embedding(y, in_size, out_size, scope):
     with tf.variable_scope(scope):
         V = tf.get_variable('w', [in_size, out_size], initializer=_initializer)
-        V_ = _spec_norm(V)
+        V_ = _spec_norm(V, _initializer)
         o = tf.matmul(y, V_)
     return o
 
@@ -137,7 +139,7 @@ def embedding(y, in_size, out_size, scope):
 def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
     with tf.variable_scope(scope):
         c_s = _downsampling(x, name='s_down')
-        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID')
+        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID', initializer=_initializer_sc)
         x = tf.nn.relu(_bach_norm(x, is_training, name='bn1'))
         x = _downsampling(x, name='down')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
@@ -149,7 +151,7 @@ def _res_block_enc(x, out_dim, is_training, scope='res_enc'):
 
 def _res_block_down(x, out_dim, is_training, scope='res_down'):
     with tf.variable_scope(scope):
-        c_s = _conv2d(x, out_dim, 1, 1, sn=True, name='s_c', padding='VALID')
+        c_s = _conv2d(x, out_dim, 1, 1, sn=True, name='s_c', padding='VALID', initializer=_initializer_sc)
         c_s = _downsampling(c_s, name='s_down')
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, sn=True, name='c1')
         x = _conv2d(tf.nn.relu(x), out_dim, 3, 1, sn=True, name='c2')
@@ -161,7 +163,7 @@ def _res_block_down(x, out_dim, is_training, scope='res_down'):
 def _res_block_up(x, out_dim, is_training, scope='res_up'):
     with tf.variable_scope(scope):
         c_s = _upsampling(x, name='s_up', mode='bi')
-        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID')
+        c_s = _conv2d(c_s, out_dim, 1, 1, name='s_c', padding='VALID', initializer=_initializer_sc)
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn1'))
         x = _upsampling(x, name='up', mode='bi')
         x = _conv2d(x, out_dim, 3, 1, name='c1')
@@ -187,7 +189,7 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-        ch = 512
+        ch = 1024
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
