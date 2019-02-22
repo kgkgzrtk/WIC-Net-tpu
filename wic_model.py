@@ -51,7 +51,7 @@ def _dense(x, channels, sn=False, name='linear'):
         return tf.matmul(x, matrix)
 
 
-def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=False, padding='SAME', initializer=_initializer):
+def _conv2d(x, out_dim, c, k, name, sn=False, use_bias=True, padding='SAME', initializer=_initializer):
     with tf.variable_scope(name) as scope:
         W = tf.get_variable('w', [c, c, x.get_shape().dims[-1].value, out_dim], initializer=initializer)
         if sn:
