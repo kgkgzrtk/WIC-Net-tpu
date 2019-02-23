@@ -193,6 +193,7 @@ def generator(x, is_training=True, scope='Generator'):
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
+            if i < 4: x = tf.layers.dropout(x, rate=0.3)
             x = _res_block_up(x, ch, is_training, scope='b_up_'+str(i))
             ch = ch//2
         x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
