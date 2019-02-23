@@ -52,8 +52,7 @@ class InputFunction(object):
         images = tf.reshape(images, [batch_size, 128, 128, 3])
         labels = tf.reshape(labels, [batch_size, 6])
 
-        #random_noise = tf.random_normal([batch_size, self.noise_dim])
-        random_noise = tf.random_uniform([batch_size, self.noise_dim])
+        random_noise = tf.random_normal([batch_size, self.noise_dim])
 
         features = {
                 'real_images': images,
