@@ -29,6 +29,11 @@ def parser(serialized_example):
     image.set_shape([3*128*128])
     image = tf.reshape(image, [128, 128, 3])
     label = tf.reshape(label, [6])
+    #data augmentation
+    image = tf.image.random_flip_left_right(image)
+    r_scale = np.random.uniform(1., 1.2)
+    image = tf.image.resize_images(image, [int(128*r_scale), int(128*r_scale)])
+    image = tf.random_crop(image, [128, 128, 3])
     return image, label
 
 
