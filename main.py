@@ -131,8 +131,7 @@ def summary_writer(images):
 def noise_input_fn(params):
     np.random.seed(0)
     noise_dataset = tf.data.Dataset.from_tensors(
-        np.random.normal(0, 1., (params['batch_size'], FLAGS.noise_dim)),
-        dtype=tf.float32)
+        tf.constant(np.random.normal(0, 1., (params['batch_size'], FLAGS.noise_dim)), dtype=tf.float32))
     noise = noise_dataset.make_one_shot_iterator().get_next()
     return {'random_noise': noise}, None
 
