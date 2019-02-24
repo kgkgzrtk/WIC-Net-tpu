@@ -189,14 +189,15 @@ def discriminator(x, a, is_training=True, scope='Discriminator'):
 
 def generator(x, is_training=True, scope='Generator'):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-        ch = 1024
+        ch = 512
         x = _dense(x, 4*4*ch, name='fc')
         x = tf.reshape(x, [-1, 4, 4, ch])
         for i in range(5):
             if i < 4: x = tf.layers.dropout(x, rate=0.3)
             x = _res_block_up(x, ch, is_training, scope='b_up_'+str(i))
             ch = ch//2
-        x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
+        #x = tf.nn.relu(_batch_norm(x, is_training, name='bn'))
+        x = tf.nn.relu(x)
         x = _conv2d(x, 3, 3, 1, name='final_c', use_bias=True)
         x = tf.tanh(x)
         return x
